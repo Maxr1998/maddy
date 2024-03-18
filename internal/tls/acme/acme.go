@@ -46,6 +46,7 @@ func (l *Loader) Init(cfg *config.Map) error {
 		testCAPath     string
 		email          string
 		agreed         bool
+		resolver       string
 		challenge      string
 		overrideDomain string
 		provider       certmagic.ACMEDNSProvider
@@ -64,6 +65,7 @@ func (l *Loader) Init(cfg *config.Map) error {
 	cfg.String("override_domain", false, false,
 		"", &overrideDomain)
 	cfg.Bool("agreed", false, false, &agreed)
+	cfg.String("resolver", false, false, "", &resolver)
 	cfg.Enum("challenge", false, true,
 		[]string{"dns-01"}, "dns-01", &challenge)
 	cfg.Custom("dns", false, false, func() (interface{}, error) {
@@ -98,6 +100,7 @@ func (l *Loader) Init(cfg *config.Map) error {
 		TestCA: testCAPath,
 		Email:  email,
 		Agreed: agreed,
+		Resolver: resolver,
 	})
 
 	switch challenge {
@@ -107,8 +110,13 @@ func (l *Loader) Init(cfg *config.Map) error {
 		if provider == nil {
 			return fmt.Errorf("tls.loader.acme: dns-01 challenge requires a configured DNS provider")
 		}
+		resolvers := []string{}
+		if resolver != "" {
+			resolvers = []string{resolver}
+		}
 		issuer.DNS01Solver = &certmagic.DNS01Solver{
 			DNSProvider:    provider,
+			Resolvers:      resolvers,
 			OverrideDomain: overrideDomain,
 		}
 	default:
